@@ -1,0 +1,18 @@
+node_modules/
+dist/
+dist-ssr/
+*.log
+.DS_Store
+
+# Backend
+backend/.env
+backend/prisma/dev.db
+backend/prisma/dev.db-journal
+
+# Frontend
+frontend/.env
+frontend/.env.local
+
+# Local Claude Code tooling (machine-specific paths)
+.claude/
+dev-frontend.sh

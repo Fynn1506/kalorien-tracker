@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Sex {
+  MALE
+  FEMALE
+}
+
+enum ActivityLevel {
+  SEDENTARY
+  LIGHT
+  MODERATE
+  ACTIVE
+  VERY_ACTIVE
+}
+
+enum Goal {
+  LOSE
+  MAINTAIN
+  GAIN
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+}
+
+// Single-user app: exactly one profile row is expected (id fixed to 1).
+model Profile {
+  id                Int           @id @default(1)
+  age               Int
+  sex               Sex
+  weightKg          Float
+  heightCm          Float
+  activityLevel     ActivityLevel
+  goal              Goal
+  dailyCalorieGoal  Int
+  proteinGoalG      Int
+  carbsGoalG        Int
+  fatGoalG          Int
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+}
+
+// Local cache of food items resolved from any FoodSource adapter.
+model Food {
+  id              String   @id @default(cuid())
+  source          String // "openfoodfacts" | "usda" | "fatsecret" | "manual"
+  sourceId        String // id/code within that source
+  barcode         String?
+  name            String
+  nameNormalized  String // lowercased `name`, used for case/umlaut-safe search
+  brand           String?
+  servingSizeG    Float? // grams per one "serving", if known
+  servingLabel    String? // e.g. "1 Scheibe (30g)"
+  kcalPer100g     Float
+  proteinPer100g  Float
+  carbsPer100g    Float
+  fatPer100g      Float
+  fiberPer100g    Float?
+  sugarPer100g    Float?
+  createdAt       DateTime @default(now())
+
+  diaryEntries DiaryEntry[]
+  favorites    Favorite[]
+
+  @@unique([source, sourceId])
+  @@index([barcode])
+  @@index([nameNormalized])
+}
+
+model DiaryEntry {
+  id         String   @id @default(cuid())
+  date       DateTime // day the entry belongs to (stored at local midnight UTC)
+  mealType   MealType
+  quantityG  Float // resolved amount in grams actually consumed
+  unitLabel  String // display label of chosen unit, e.g. "150 g" or "2 Stück"
+
+  // Snapshot of nutrition at time of logging (kept even if Food data changes later)
+  kcal    Float
+  protein Float
+  carbs   Float
+  fat     Float
+  fiber   Float?
+  sugar   Float?
+
+  foodId String
+  food   Food   @relation(fields: [foodId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([date])
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  foodId    String
+  food      Food     @relation(fields: [foodId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([foodId])
+}
